@@ -1,0 +1,201 @@
+@import "tailwindcss";
+
+/*
+ * The app's only colour palette (Tailwind v4 keeps its config here: every --color-* below becomes
+ * a CSS variable and utilities like bg-primary-strong / text-syrup-muted). Reference palette:
+ * syrup-brown sidebar, rose primary, teal for positive/growth (charts, present), soft card tints
+ * and badge pastels. Components use these tokens only, never hex values.
+ *
+ * Each colour family keeps its hue; extra steps change only lightness (and saturation for the
+ * darker rose) so text stays WCAG AA (4.5:1) and chart marks/icons 3:1:
+ *   <colour>         the colour itself: fills that carry syrup text, icons, rings, decorative areas
+ *   <colour>-strong  darker: white text on it, or (teal/amber) chart marks on a card (3:1)
+ *   <colour>-ink     text on light backgrounds (on its tint, the surface and the background)
+ *   <colour>-tint    the reference card tint / badge pastel used behind it
+ */
+/* `static`: emit every token as a CSS variable, including ones only read from inline styles / JS */
+@theme static {
+  --color-*: initial;
+  --color-white: #FFFFFF;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Reference card tints and badge pastels (used as the -tint of the families below) */
+  --color-tint-pink: #FEE1EA; /* +15% saturation over the reference #FCE3EB */
+  --color-tint-amber: #FEEAD3; /* +15% saturation over #FBEAD6 */
+  --color-tint-green: #DDF3E7; /* +15% saturation over #DEF2E7 */
+  --color-pastel-lilac: #E3D4F7;
+  --color-pastel-blue: #D6E6FB;
+  --color-pastel-green: #D7F0DE;
+
+  /* Syrup-brown sidebar dark. Named `syrup` because Tailwind's `text-base` is a font size. */
+  --color-syrup: #3A1810;
+  --color-syrup-soft: #48261E; /* sidebar hover / pressed */
+  --color-syrup-muted: #8E5B50; /* secondary text: 4.7:1 on background-deep, 5.5:1 on surface */
+  --color-syrup-faint: #AD887F; /* icons and dividers only (3.1:1, non-text); text uses syrup-muted */
+  --color-syrup-subtle: #E5D1CD; /* text on the sidebar (10.9:1) */
+
+  /* Surfaces */
+  --color-background: #FBF3E7; /* page */
+  --color-background-deep: #F8EAD5; /* chips, skeletons, hover fills */
+  --color-surface: #FFFCF7; /* cards, dialogs, inputs */
+  --color-border: #E7D9C6;
+
+  /* Rose: primary actions, active nav, links */
+  --color-primary: #EC2D6E; /* 4.0:1 on surface: icons, rings, accents */
+  --color-primary-strong: #E4155B; /* buttons with white text (4.6:1) */
+  --color-primary-ink: #C5124F; /* links and error text (5.7:1 on surface) */
+  --color-primary-tint: var(--color-tint-pink);
+
+  /* Teal: positive / growth (charts, success). Contrasts with the rose primary. */
+  --color-secondary: #1FAE89; /* fills behind syrup text (5.7:1); too light for marks or white text */
+  --color-secondary-strong: #1DA482; /* chart lines, bars and icons on a card (3.07:1) */
+  --color-secondary-ink: #15745C; /* teal text (5.6:1 on surface) */
+  --color-secondary-tint: var(--color-tint-green);
+
+  /* Marigold (amber): warnings, drafts, pending, late */
+  --color-amber: #E8821A; /* marigold; carries syrup text (5.8:1), never white */
+  --color-amber-strong: #DA7916; /* marks on a card (3.05:1) */
+  --color-amber-ink: #9B5610;
+  --color-amber-tint: var(--color-tint-amber);
+
+  /* Attendance status colours */
+  --color-present: #2E9E4F; /* green; 3.35:1 on surface, so usable as a chart mark */
+  --color-present-strong: #278442; /* white text 4.7:1 */
+  --color-present-ink: #22743A;
+  --color-present-tint: var(--color-pastel-green);
+
+  --color-late: #E8A33D;
+  --color-late-strong: var(--color-amber-strong);
+  --color-late-ink: var(--color-amber-ink);
+  --color-late-tint: var(--color-amber-tint);
+
+  --color-absent: #DC3030;
+  --color-absent-strong: #DC3030; /* white text 4.66:1 as is */
+  --color-absent-ink: #C32121;
+  --color-absent-tint: var(--color-tint-pink);
+
+  --color-leave: #5B5FA6;
+  --color-leave-strong: #5B5FA6; /* white text 5.8:1 as is */
+  --color-leave-ink: #585BA1;
+  --color-leave-tint: var(--color-pastel-blue);
+
+  --color-half: #9B6B8C;
+  --color-half-strong: #966687; /* white text 4.6:1 */
+  --color-half-ink: #76506A;
+  --color-half-tint: var(--color-pastel-lilac);
+
+  --shadow-soft: 0 1px 2px color-mix(in srgb, var(--color-syrup) 4%, transparent),
+    0 4px 16px color-mix(in srgb, var(--color-syrup) 6%, transparent);
+
+  /* Polish animations (CSS only, so they cost no JavaScript on low-end phones) */
+  --animate-row-in: row-in 260ms ease-out both;
+  --animate-fade-in: fade-in 200ms ease-out both;
+  --animate-error-in: error-in 180ms ease-out both;
+  --animate-page-in: page-in 280ms ease-out both;
+
+  @keyframes row-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes error-in {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes page-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+/* A just-edited row glows rose and fades back. Tables flash their cells (a <tr> can't hold an
+   overlay); cards get a tinted overlay. Separate from the fade-in so neither replays the other. */
+.flash-row > td,
+.flash-cell {
+  animation: row-flash 1600ms ease-out both;
+}
+.flash-card {
+  position: relative;
+}
+.flash-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-primary-tint);
+  pointer-events: none;
+  animation: card-flash 1600ms ease-out both;
+}
+@keyframes row-flash {
+  0%, 35% { background-color: var(--color-primary-tint); }
+  100% { background-color: transparent; }
+}
+@keyframes card-flash {
+  0%, 35% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+body {
+  @apply bg-background text-syrup antialiased;
+}
+
+/* Every placeholder passes AA (Tailwind's default is the text colour at 50%, about 3.3:1) */
+@layer base {
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-syrup-muted);
+    opacity: 1;
+  }
+}
+
+/* Checkmark draw-in on the punch success screen */
+.check-draw circle {
+  stroke-dasharray: 152;
+  stroke-dashoffset: 152;
+  animation: check-stroke 450ms ease-out forwards;
+}
+.check-draw path {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: check-stroke 300ms 350ms ease-out forwards;
+}
+.check-pop {
+  animation: check-pop 400ms 600ms ease-out both;
+}
+@keyframes check-stroke {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes check-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* prefers-reduced-motion: no movement anywhere. CSS animations and transitions finish instantly
+   (things still appear, just without motion); framer-motion parts check the same setting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* The edited-row highlight stays as a still tint while the class is on (colour, not motion) */
+  .flash-row > td,
+  .flash-cell {
+    animation: none !important;
+    background-color: var(--color-primary-tint);
+  }
+  .flash-card::after {
+    animation: none !important;
+    opacity: 0.45;
+  }
+}

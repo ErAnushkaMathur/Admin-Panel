@@ -1,0 +1,2510 @@
+{
+  "info": {
+    "name": "Sweet Shop Staff Panel API",
+    "description": "Run the whole collection with the Collection Runner (in order). \"Register owner\" creates a brand-new shop each run, so re-running never hits duplicate errors. Requires the server running (npm run dev in server/).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "email",
+      "value": ""
+    },
+    {
+      "key": "departmentId",
+      "value": ""
+    },
+    {
+      "key": "departmentId2",
+      "value": ""
+    },
+    {
+      "key": "shiftId",
+      "value": ""
+    },
+    {
+      "key": "employeeId",
+      "value": ""
+    },
+    {
+      "key": "employeeId2",
+      "value": ""
+    },
+    {
+      "key": "firstPin",
+      "value": ""
+    },
+    {
+      "key": "pin",
+      "value": ""
+    },
+    {
+      "key": "wrongPin",
+      "value": ""
+    },
+    {
+      "key": "punchToken",
+      "value": ""
+    },
+    {
+      "key": "oldPunchToken",
+      "value": ""
+    },
+    {
+      "key": "leaveId",
+      "value": ""
+    },
+    {
+      "key": "leaveId2",
+      "value": ""
+    },
+    {
+      "key": "payrollMonth",
+      "value": ""
+    },
+    {
+      "key": "payrollId",
+      "value": ""
+    },
+    {
+      "key": "payrollId2",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Register owner (new shop each run)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Sharma Sweets\",\n  \"name\": \"Ravi Sharma\",\n  \"email\": \"{{email}}\",\n  \"password\": \"secret123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('email', 'owner' + Date.now() + '@example.com')"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "const json = pm.response.json()",
+                  "pm.test('no passwordHash in response', () => pm.expect(JSON.stringify(json)).to.not.include('passwordHash'))",
+                  "pm.collectionVariables.set('token', json.token)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login with wrong password -> 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"wrongpass\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401))",
+                  "pm.test('generic message', () => pm.expect(pm.response.json().error.message).to.eql('Invalid email or password'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"secret123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.collectionVariables.set('token', pm.response.json().token)"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Setup (departments + shift)",
+      "item": [
+        {
+          "name": "Create department Kitchen",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/departments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kitchen\",\n  \"color\": \"#f2727f\",\n  \"icon\": \"chef-hat\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "pm.collectionVariables.set('departmentId', pm.response.json().department._id)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create department Counter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/departments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Counter\",\n  \"color\": \"#4a90d9\",\n  \"icon\": \"store\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "pm.collectionVariables.set('departmentId2', pm.response.json().department._id)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create shift Morning",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shifts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "shifts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Morning\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"16:00\",\n  \"graceMinutes\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "pm.collectionVariables.set('shiftId', pm.response.json().shift._id)"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Employees",
+      "item": [
+        {
+          "name": "Create employee (PIN shown once)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ramesh Kumar\",\n  \"phone\": \"+91 98765 43210\",\n  \"departmentId\": \"{{departmentId}}\",\n  \"roleTitle\": \"Chef\",\n  \"shiftId\": \"{{shiftId}}\",\n  \"joinDate\": \"2026-04-01\",\n  \"salary\": {\n    \"type\": \"monthly\",\n    \"amountPaise\": 1800000,\n    \"overtimeMultiplier\": 1.5,\n    \"weeklyOff\": [\n      0\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "const { employee, pin } = pm.response.json()",
+                  "pm.test('PIN is 4 digits', () => pm.expect(pin).to.match(/^\\d{4}$/))",
+                  "pm.test('first code is 101', () => pm.expect(employee.employeeCode).to.eql('101'))",
+                  "pm.test('phone normalized', () => pm.expect(employee.phone).to.eql('9876543210'))",
+                  "pm.test('no pinHash', () => pm.expect(employee).to.not.have.property('pinHash'))",
+                  "pm.test('department + shift expanded', () => {",
+                  "  pm.expect(employee.department.name).to.eql('Kitchen')",
+                  "  pm.expect(employee.shift.name).to.eql('Morning')",
+                  "})",
+                  "pm.test('salary in paise', () => pm.expect(employee.salary.amountPaise).to.eql(1800000))",
+                  "pm.test('response not cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'))",
+                  "pm.collectionVariables.set('employeeId', employee._id)",
+                  "pm.collectionVariables.set('firstPin', pin)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create second employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Suresh Patel\",\n  \"phone\": \"9123456780\",\n  \"departmentId\": \"{{departmentId2}}\",\n  \"roleTitle\": \"Counter Staff\",\n  \"shiftId\": \"{{shiftId}}\",\n  \"joinDate\": \"2026-04-01\",\n  \"salary\": {\n    \"type\": \"daily\",\n    \"amountPaise\": 70000,\n    \"weeklyOff\": [\n      2\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "const { employee } = pm.response.json()",
+                  "pm.test('next code is 102', () => pm.expect(employee.employeeCode).to.eql('102'))",
+                  "pm.test('overtime multiplier defaults to 1.5', () => pm.expect(employee.salary.overtimeMultiplier).to.eql(1.5))",
+                  "pm.collectionVariables.set('employeeId2', employee._id)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Duplicate phone -> 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Copy Cat\",\n  \"phone\": \"098765 43210\",\n  \"departmentId\": \"{{departmentId}}\",\n  \"roleTitle\": \"Chef\",\n  \"shiftId\": \"{{shiftId}}\",\n  \"joinDate\": \"2026-04-01\",\n  \"salary\": {\n    \"type\": \"monthly\",\n    \"amountPaise\": 1800000,\n    \"overtimeMultiplier\": 1.5,\n    \"weeklyOff\": [\n      0\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409))",
+                  "pm.test('points at phone field', () => pm.expect(pm.response.json().error.details[0].field).to.eql('phone'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Validation errors -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"R\",\n  \"phone\": \"12345\",\n  \"departmentId\": \"not-an-id\",\n  \"roleTitle\": \"\",\n  \"shiftId\": \"{{shiftId}}\",\n  \"joinDate\": \"2026-02-30\",\n  \"salary\": {\n    \"type\": \"weekly\",\n    \"amountPaise\": 100.5\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400))",
+                  "const fields = pm.response.json().error.details.map((d) => d.field)",
+                  "pm.test('lists every bad field', () =>",
+                  "  pm.expect(fields).to.include.members(['name', 'phone', 'departmentId', 'roleTitle', 'joinDate', 'salary.type', 'salary.amountPaise']))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List all employees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const json = pm.response.json()",
+                  "pm.test('2 employees', () => pm.expect(json.total).to.eql(2))",
+                  "pm.test('no PIN data anywhere', () => {",
+                  "  pm.expect(pm.response.text()).to.not.include('pinHash')",
+                  "  pm.expect(json.employees[0]).to.not.have.property('pin')",
+                  "})"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search by name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees?search=ramesh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "ramesh"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('finds Ramesh only', () => pm.expect(pm.response.json().employees.map((e) => e.name)).to.eql(['Ramesh Kumar']))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter by department (Counter)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees?departmentId={{departmentId2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ],
+              "query": [
+                {
+                  "key": "departmentId",
+                  "value": "{{departmentId2}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('finds Suresh only', () => pm.expect(pm.response.json().employees.map((e) => e.name)).to.eql(['Suresh Patel']))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get one employee",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const { employee } = pm.response.json()",
+                  "pm.test('owner sees salary', () => pm.expect(employee).to.have.property('salary'))",
+                  "pm.test('PIN not returned again', () => pm.expect(pm.response.json()).to.not.have.property('pin'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update role + department (no audit log)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleTitle\": \"Head Chef\",\n  \"departmentId\": \"{{departmentId2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const { employee } = pm.response.json()",
+                  "pm.test('role updated', () => pm.expect(employee.roleTitle).to.eql('Head Chef'))",
+                  "pm.test('department updated', () => pm.expect(employee.department.name).to.eql('Counter'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update salary (audit-logged)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salary\": {\n    \"amountPaise\": 2000000\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const { salary } = pm.response.json().employee",
+                  "pm.test('amount changed', () => pm.expect(salary.amountPaise).to.eql(2000000))",
+                  "pm.test('other salary fields kept', () => {",
+                  "  pm.expect(salary.type).to.eql('monthly')",
+                  "  pm.expect(salary.weeklyOff).to.eql([0])",
+                  "})"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deactivate (soft delete)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId2}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('inactive', () => pm.expect(pm.response.json().employee.isActive).to.eql(false))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List inactive",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees?status=inactive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "inactive"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('only Suresh', () => pm.expect(pm.response.json().employees.map((e) => e.name)).to.eql(['Suresh Patel']))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId2}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('active again', () => pm.expect(pm.response.json().employee.isActive).to.eql(true))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset PIN",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId}}/reset-pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}",
+                "reset-pin"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const { pin, employee } = pm.response.json()",
+                  "pm.test('new 4-digit PIN', () => pm.expect(pin).to.match(/^\\d{4}$/))",
+                  "pm.test('returns who it was for', () => pm.expect(employee.employeeCode).to.eql('101'))",
+                  "pm.test('no pinHash', () => pm.expect(employee).to.not.have.property('pinHash'))",
+                  "pm.test('response not cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'))",
+                  "pm.collectionVariables.set('pin', pin)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE is not allowed -> 404",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('no delete route', () => pm.response.to.have.status(404))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid id -> 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees/not-an-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "not-an-id"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid token -> 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "not-a-real-token",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401))",
+                  "pm.test('INVALID_TOKEN code', () => pm.expect(pm.response.json().error.code).to.eql('INVALID_TOKEN'))"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Punch (public)",
+      "item": [
+        {
+          "name": "Get punch link (settings)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/settings/punch-link",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings",
+                "punch-link"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.collectionVariables.set('punchToken', pm.response.json().punchToken)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Punch page info (no login)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/punch/{{punchToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "punch",
+                "{{punchToken}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('business name + server time', () => {",
+                  "  pm.expect(pm.response.json().businessName).to.eql('Sharma Sweets')",
+                  "  pm.expect(pm.response.json().serverTime).to.be.a('string')",
+                  "})"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Punch with wrong PIN -> 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/punch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "punch"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessToken\": \"{{punchToken}}\",\n  \"employeeCode\": \"101\",\n  \"pin\": \"{{wrongPin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const pin = pm.collectionVariables.get('pin')",
+                  "pm.collectionVariables.set('wrongPin', String((Number(pin) + 1) % 10000).padStart(4, '0'))"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401))",
+                  "pm.test('generic message + attempts left', () =>",
+                  "  pm.expect(pm.response.json().error.message).to.eql('Wrong employee code or PIN. 4 attempts left.'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown code -> same 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/punch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "punch"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessToken\": \"{{punchToken}}\",\n  \"employeeCode\": \"999\",\n  \"pin\": \"1357\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401))",
+                  "pm.test('same message as a real code', () =>",
+                  "  pm.expect(pm.response.json().error.message).to.eql('Wrong employee code or PIN. 4 attempts left.'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Punch IN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/punch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "punch"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessToken\": \"{{punchToken}}\",\n  \"employeeCode\": \"101\",\n  \"pin\": \"{{pin}}\",\n  \"source\": \"link\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "const json = pm.response.json()",
+                  "pm.test('action in', () => pm.expect(json.action).to.eql('in'))",
+                  "pm.test('confirmation message', () => pm.expect(json.message).to.match(/^Ramesh Kumar, punched IN at \\d{2}:\\d{2} (AM|PM)\\.$/))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Double punch -> already in (not OUT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/punch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "punch"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessToken\": \"{{punchToken}}\",\n  \"employeeCode\": \"101\",\n  \"pin\": \"{{pin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('already_in', () => pm.expect(pm.response.json().action).to.eql('already_in'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Client time is rejected -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/punch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "punch"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessToken\": \"{{punchToken}}\",\n  \"employeeCode\": \"101\",\n  \"pin\": \"{{pin}}\",\n  \"punchIn\": \"2020-01-01T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regenerate punch link",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/settings/punch-link/regenerate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings",
+                "punch-link",
+                "regenerate"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('oldPunchToken', pm.collectionVariables.get('punchToken'))"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('new token', () => pm.expect(pm.response.json().punchToken).to.not.eql(pm.collectionVariables.get('oldPunchToken')))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Old punch link -> 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/punch/{{oldPunchToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "punch",
+                "{{oldPunchToken}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404))",
+                  "pm.test('INVALID_PUNCH_LINK', () => pm.expect(pm.response.json().error.code).to.eql('INVALID_PUNCH_LINK'))"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Leave",
+      "item": [
+        {
+          "name": "Record leave request (pending)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leaves",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaves"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"fromDate\": \"2026-12-01\",\n  \"toDate\": \"2026-12-03\",\n  \"type\": \"paid\",\n  \"reason\": \"Village festival\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "const { leave } = pm.response.json()",
+                  "pm.test('pending', () => pm.expect(leave.status).to.eql('pending'))",
+                  "pm.test('3 days (computed by server)', () => pm.expect(leave.days).to.eql(3))",
+                  "pm.collectionVariables.set('leaveId', leave._id)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Overlapping request -> 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leaves",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaves"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"fromDate\": \"2026-12-03\",\n  \"toDate\": \"2026-12-04\",\n  \"type\": \"unpaid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409))",
+                  "pm.test('LEAVE_OVERLAP', () => pm.expect(pm.response.json().error.code).to.eql('LEAVE_OVERLAP'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve leave (with note)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leaves/{{leaveId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaves",
+                "{{leaveId}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Enjoy the festival\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const { leave } = pm.response.json()",
+                  "pm.test('approved', () => pm.expect(leave.status).to.eql('approved'))",
+                  "pm.test('note saved', () => pm.expect(leave.decisionNote).to.eql('Enjoy the festival'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve again -> 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leaves/{{leaveId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaves",
+                "{{leaveId}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409))",
+                  "pm.test('LEAVE_NOT_PENDING', () => pm.expect(pm.response.json().error.code).to.eql('LEAVE_NOT_PENDING'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner adds approved leave on behalf",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leaves/on-behalf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaves",
+                "on-behalf"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId2}}\",\n  \"fromDate\": \"2026-12-10\",\n  \"toDate\": \"2026-12-10\",\n  \"type\": \"sick\",\n  \"reason\": \"Fever\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "const { leave } = pm.response.json()",
+                  "pm.test('approved at once', () => pm.expect(leave.status).to.eql('approved'))",
+                  "pm.test('marked as owner-added', () => pm.expect(leave.addedByOwner).to.eql(true))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Record request to reject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leaves",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaves"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId2}}\",\n  \"fromDate\": \"2026-12-20\",\n  \"toDate\": \"2026-12-20\",\n  \"type\": \"unpaid\",\n  \"reason\": \"Movie\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201))",
+                  "pm.collectionVariables.set('leaveId2', pm.response.json().leave._id)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject leave",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leaves/{{leaveId2}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaves",
+                "{{leaveId2}}",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Diwali rush\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('rejected', () => pm.expect(pm.response.json().leave.status).to.eql('rejected'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List leave with counts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leaves?status=all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaves"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "all"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('counts from server', () => pm.expect(pm.response.json().counts).to.eql({ pending: 0, approved: 2, rejected: 1, all: 3 }))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Audit log: leave approvals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs?type=leave.approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "leave.approve"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const { rows } = pm.response.json()",
+                  "pm.test('one approval, labelled', () => {",
+                  "  pm.expect(rows.length).to.eql(1)",
+                  "  pm.expect(rows[0].actionLabel).to.eql('Leave approved')",
+                  "  pm.expect(rows[0].reason).to.eql('Enjoy the festival')",
+                  "})"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Payroll",
+      "description": "Owner only. Uses last month (IST) so it can be finalized. Employees above joined 2026-04-01.",
+      "item": [
+        {
+          "name": "Calculate last month",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payroll/calculate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll",
+                "calculate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": \"{{payrollMonth}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ist = new Date(Date.now() + 5.5 * 3600 * 1000)",
+                  "const d = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth() - 1, 1))",
+                  "pm.collectionVariables.set('payrollMonth', d.toISOString().slice(0, 7))"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const body = pm.response.json()",
+                  "pm.test('a draft row per employee', () => { pm.expect(body.rows.length).to.eql(2); body.rows.forEach((r) => pm.expect(r.status).to.eql('draft')) })",
+                  "pm.test('money in integer paise', () => body.rows.forEach((r) => pm.expect(Number.isInteger(r.snapshot.netPaise)).to.be.true))",
+                  "pm.test('totals computed by server', () => pm.expect(body.totals.netPaise).to.eql(body.rows.reduce((s, r) => s + r.snapshot.netPaise, 0)))",
+                  "pm.collectionVariables.set('payrollId', body.rows[0]._id)",
+                  "pm.collectionVariables.set('payrollId2', body.rows[1]._id)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List month",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payroll?month={{payrollMonth}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "{{payrollMonth}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('month is over', () => pm.expect(pm.response.json().isOver).to.be.true)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Future month -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payroll/calculate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll",
+                "calculate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": \"2099-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set bonus + advance (audit-logged)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payroll/{{payrollId}}/adjustments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll",
+                "{{payrollId}}",
+                "adjustments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bonusPaise\": 50000,\n  \"advancePaise\": 100000,\n  \"reason\": \"Festival bonus\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const p = pm.response.json().payroll",
+                  "pm.test('stored', () => { pm.expect(p.bonusPaise).to.eql(50000); pm.expect(p.advancePaise).to.eql(100000) })"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Finalize month",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payroll/finalize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll",
+                "finalize"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": \"{{payrollMonth}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('all finalized', () => pm.expect(pm.response.json().statusCounts.finalized).to.eql(2))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit after finalize -> 409",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payroll/{{payrollId}}/adjustments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll",
+                "{{payrollId}}",
+                "adjustments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bonusPaise\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409))",
+                  "pm.test('PAYROLL_LOCKED', () => pm.expect(pm.response.json().error.code).to.eql('PAYROLL_LOCKED'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark paid",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payroll/{{payrollId}}/paid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll",
+                "{{payrollId}}",
+                "paid"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('paid', () => pm.expect(pm.response.json().payroll.status).to.eql('paid'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payslip",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payroll/{{payrollId}}/payslip",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll",
+                "{{payrollId}}",
+                "payslip"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const b = pm.response.json()",
+                  "pm.test('has shop + snapshot', () => { pm.expect(b.business.name).to.be.a('string'); pm.expect(b.payroll.snapshot).to.have.property('netPaise') })"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reopen without reason -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payroll/reopen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll",
+                "reopen"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": \"{{payrollMonth}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reopen month (owner, audit-logged)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payroll/reopen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payroll",
+                "reopen"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": \"{{payrollMonth}}\",\n  \"reason\": \"Advance entered wrong\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const rows = pm.response.json().rows",
+                  "pm.test('paid row stays paid', () => pm.expect(rows.find((r) => r._id === pm.collectionVariables.get('payrollId')).status).to.eql('paid'))",
+                  "pm.test('other row back to draft', () => pm.expect(rows.find((r) => r._id === pm.collectionVariables.get('payrollId2')).status).to.eql('draft'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Audit log: payroll entries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const actions = pm.response.json().rows.map((r) => r.action)",
+                  "pm.test('finalize, reopen, mark paid, adjust logged', () => ['payroll.finalize', 'payroll.reopen', 'payroll.mark_paid', 'payroll.adjust'].forEach((a) => pm.expect(actions).to.include(a)))"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Settings",
+      "description": "Owner edits; managers can only read. The half-day threshold is Business.attendanceSettings.halfDayThresholdMinutes.",
+      "item": [
+        {
+          "name": "Get settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "const b = pm.response.json()",
+                  "pm.test('4-hour half-day default', () => pm.expect(b.settings.halfDayThresholdMinutes).to.eql(240))",
+                  "pm.test('timezone is IST', () => pm.expect(b.timezone).to.eql('Asia/Kolkata'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change half-day threshold to 5 h (audit-logged)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"halfDayThresholdMinutes\": 300\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('saved', () => pm.expect(pm.response.json().settings.halfDayThresholdMinutes).to.eql(300))",
+                  "pm.test('existing field', () => pm.expect(pm.response.json().business.attendanceSettings.halfDayThresholdMinutes).to.eql(300))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Timezone is not editable -> 400",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timezone\": \"Europe/London\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Out of range -> 400",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"defaultGraceMinutes\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400))",
+                  "pm.test('field error', () => pm.expect(pm.response.json().error.details[0].field).to.eql('defaultGraceMinutes'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payroll rules",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"halfDayThresholdMinutes\": 240,\n  \"workingDaysPolicy\": \"fixed26\",\n  \"lateRuleEnabled\": true,\n  \"lateRuleEvery\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('saved', () => pm.expect(pm.response.json().settings.workingDaysPolicy).to.eql('fixed26'))"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Audit log: settings changes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs?type=settings.update",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "settings.update"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200))",
+                  "pm.test('two entries', () => pm.expect(pm.response.json().total).to.eql(2))"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
