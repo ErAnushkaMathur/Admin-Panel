@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout.jsx'
-import LoginHero from '../components/login/LoginHero.jsx'
 import FormField from '../components/FormField.jsx'
 import SubmitButton from '../components/SubmitButton.jsx'
 import Alert from '../components/Alert.jsx'
 import { useAuth } from '../hooks/useAuth.js'
 import { getErrorMessage, getFieldErrors } from '../api/client.js'
+
+// Put a real account from your database here
+const DEMO_CREDENTIALS = { email: 'shankarsweets@gmail.com', password: '12345678' }
 
 export default function Login() {
   const { login, sessionExpired } = useAuth()
@@ -14,6 +16,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
 
   const update = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
 
@@ -32,11 +35,22 @@ export default function Login() {
     }
   }
 
+  async function handleDemoLogin() {
+    setError('')
+    setFieldErrors({})
+    setDemoLoading(true)
+    try {
+      await login(DEMO_CREDENTIALS)
+    } catch (err) {
+      setError(getErrorMessage(err))
+      setDemoLoading(false)
+    }
+  }
+
   return (
     <AuthLayout
       title="Welcome back"
       subtitle="Log in to manage your staff"
-      aside={<LoginHero />}
       footer={
         <>
           New here?{' '}
@@ -73,6 +87,19 @@ export default function Login() {
           Log in
         </SubmitButton>
       </form>
+
+      {/* Demo login card, directly below the Log in button */}
+      <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+        <p className="mb-3 text-sm text-gray-600">Just want to look around?</p>
+        <button
+          type="button"
+          onClick={handleDemoLogin}
+          disabled={demoLoading || submitting}
+          className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {demoLoading ? 'Signing in…' : 'Demo Login'}
+        </button>
+      </div>
     </AuthLayout>
   )
 }

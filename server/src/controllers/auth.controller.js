@@ -51,6 +51,7 @@ export async function login(req, res) {
   sendAuth(res, 200, user, business)
 }
 
+
 // httpOnly cookie can't be removed by the browser's JS, so the server clears it
 export function logout(req, res) {
   const { maxAge, ...options } = authCookieOptions()
