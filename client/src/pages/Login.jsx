@@ -89,17 +89,12 @@ export default function Login() {
       </form>
 
       {/* Demo login card, directly below the Log in button */}
-      <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
-        <p className="mb-3 text-sm text-gray-600">Just want to look around?</p>
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          disabled={demoLoading || submitting}
-          className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {demoLoading ? 'Signing in…' : 'Demo Login'}
-        </button>
-      </div>
+<div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+  <p className="mb-3 text-sm text-gray-600">Just want to look around?</p>
+  <SubmitButton type="button" onClick={handleDemoLogin} loading={demoLoading} loadingText="Signing in…">
+    Demo Login
+  </SubmitButton>
+</div>
     </AuthLayout>
   )
 }
