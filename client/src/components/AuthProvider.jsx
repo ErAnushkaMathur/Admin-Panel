@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AuthContext } from '../hooks/authContext.js'
 import { authApi } from '../api/auth.js'
-import { setUnauthorizedHandler } from '../api/client.js'
+import { clearAuthToken, setUnauthorizedHandler } from '../api/client.js'
 
 // status: 'loading' (checking session) | 'authenticated' | 'unauthenticated' | 'error' (server unreachable)
 export default function AuthProvider({ children }) {
@@ -63,6 +63,7 @@ export default function AuthProvider({ children }) {
     } finally {
       setSessionExpired(false)
       clearSession()
+      clearAuthToken()
     }
   }, [clearSession])
 

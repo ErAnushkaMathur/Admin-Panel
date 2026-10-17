@@ -19,7 +19,7 @@ export function authCookieOptions() {
   return {
     httpOnly: true,
     secure: env.nodeEnv === 'production',
-    sameSite: 'none',
+    sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
     maxAge: env.jwtCookieMaxAgeMs,
   }
 }

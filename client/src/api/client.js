@@ -1,9 +1,23 @@
 import axios from 'axios'
 
+const AUTH_TOKEN_KEY = 'sweetops.authToken'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://admin-panel-backend-dxj5.onrender.com',
-  // Auth lives in an httpOnly cookie set by the server
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  // Prefer the server's httpOnly cookie; send the session token as a fallback if cookies are blocked.
   withCredentials: true,
+})
+
+export function clearAuthToken() {
+  if (typeof window !== 'undefined') window.sessionStorage.removeItem(AUTH_TOKEN_KEY)
+}
+
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = window.sessionStorage.getItem(AUTH_TOKEN_KEY)
+    if (token) config.headers.set('Authorization', `Bearer ${token}`)
+  }
+  return config
 })
 
 // Called when an authenticated request comes back 401 (expired/invalid session).
@@ -13,8 +27,15 @@ export function setUnauthorizedHandler(fn) {
 }
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    const token = res.data?.token
+    if (typeof window !== 'undefined' && typeof token === 'string' && token) {
+      window.sessionStorage.setItem(AUTH_TOKEN_KEY, token)
+    }
+    return res
+  },
   (error) => {
+    if (error.response?.status === 401) clearAuthToken()
     // Auth endpoints (login, me, ...) opt out: a 401 there is an expected answer, not a lost session
     if (error.response?.status === 401 && !error.config?.skipAuthRedirect && onUnauthorized) {
       onUnauthorized(error.response.data?.error?.code)
